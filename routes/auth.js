@@ -3,9 +3,12 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { logWalletTransaction } = require('../helpers/wallet');
 
 // Helper: Format validation error
 const formatError = (field, message) => ({ [field]: message });
+
+const WELCOME_BONUS = 100; 
 
 // Helper: Generate player ID
 const generatePlayerId = () => 'PLAYER-' + Date.now();
@@ -55,10 +58,21 @@ router.post('/register', async (req, res) => {
             player_id,
             user_name,
             mobile,
+            wallet_balance:WELCOME_BONUS,
             password: hashedPassword
         });
 
+         
+
         await newUser.save();
+
+        await logWalletTransaction({
+            userId: newUser._id,
+            amount: WELCOME_BONUS,
+            type: 'credit',
+            reason: 'welcome_bonus',
+            description: `Welcome bonus of ₹${WELCOME_BONUS} credited`
+        });
 
         return res.status(200).json({
             message: 'User registered successfully',
@@ -142,10 +156,20 @@ router.post('/guest-login', async (req, res) => {
             user_name: `Guest${Math.floor(Math.random() * 10000)}`,
             mobile: `000${Math.floor(Math.random() * 1000000000)}`,
             password: await bcrypt.hash('guest1234', 10),
-            is_guest: true
+            is_guest: true,
+            wallet_balance:WELCOME_BONUS
         });
 
         await user.save();
+
+
+        await logWalletTransaction({
+            userId: user._id,
+            amount: WELCOME_BONUS,
+            type: 'credit',
+            reason: 'welcome_bonus',
+            description: `Welcome bonus of ₹${WELCOME_BONUS} credited`
+        });
 
         const payload = { user: { id: user.id } };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });

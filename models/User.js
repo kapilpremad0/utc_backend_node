@@ -22,6 +22,10 @@ const UserSchema = new mongoose.Schema({
     is_guest: {
         type: Boolean,
         default: false
+    },
+    wallet_balance: {
+        type: Number,
+        default: 0  // Or starting balance
     }
 }, { timestamps: true });
 

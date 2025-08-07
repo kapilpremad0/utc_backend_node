@@ -3,6 +3,8 @@ const router = express.Router();
 const User = require('../models/User');
 const Boot = require('../models/Boot');
 const Room = require('../models/Room');
+const Bet = require('../models/Bet');
+const { logWalletTransaction } = require('../helpers/wallet');
 
 const formatError = (field, message) => ({ [field]: message });
 const verifyToken = require('../middlewares/auth'); // 👈 Import middleware
@@ -17,6 +19,8 @@ exports.bootGameList = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+
 
 
 exports.PlayBootGame = async (req, res) => {
@@ -124,5 +128,169 @@ exports.exitGame = async (req, res) => {
     } catch (error) {
         console.error('Error exiting game:', error);
         return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
+
+exports.placeBet = async (req, res) => {
+    const userId = req.user.id;
+    const { room_id, amount, type } = req.body || {};
+
+    const errors = {};
+    if (!room_id) errors.room_id = 'room_id is required';
+    if (!amount || amount <= 0) errors.amount = 'Valid amount is required';
+    if (!type) errors.type = 'type is required (e.g., blind, chaal, pack)';
+
+    if (Object.keys(errors).length > 0) {
+        return res.status(422).json({ message: 'Validation Error', errors });
+    }
+
+    try {
+        const room = await Room.findById(room_id);
+        if (!room) return res.status(404).json({ message: 'Room not found' });
+
+        // Ensure player is in room
+        if (!room.players.includes(userId)) {
+            return res.status(403).json({ message: 'You are not in this room' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Check wallet (assume you have a `wallet_balance` field)
+        if (user.wallet_balance < amount) {
+            return res.status(400).json({ message: 'Insufficient balance' });
+        }
+
+        // Deduct from user wallet (basic way, you can use transactions if needed)
+        user.wallet_balance -= amount;
+        await user.save();
+
+        // Create Bet entry
+        const bet = new Bet({
+            room_id,
+            user_id: userId,
+            amount,
+            type,
+            is_blind: type === 'blind'
+        });
+
+        await bet.save();
+
+        await logWalletTransaction({
+            userId: userId,
+            amount,
+            type: 'debit',
+            reason: 'bet',
+            description: `Placed a ${type} bet of ₹${amount}`
+        });
+
+        // Optionally update pot amount or room stake if needed
+        room.total_pot = (room.total_pot || 0) + amount;
+        await room.save();
+
+        res.status(200).json({
+            message: 'Bet placed successfully',
+            bet
+        });
+
+    } catch (err) {
+        console.error('Bet error:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
+
+
+exports.completeGame = async (req, res) => {
+    try {
+
+        const { room_id } = req.body || {};
+        const errors = {};
+
+        if (!room_id) {
+            Object.assign(errors, formatError('room_id', 'The room_id field is required.'));
+        }
+
+        if (Object.keys(errors).length > 0) {
+            return res.status(422).json({ message: 'Validation Error', errors });
+        }
+
+        const result = await completeRoomAndDeclareWinner(room_id);
+        if (result.error) return res.status(400).json({ message: result.error });
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error fetching boots:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// Function declared at top or before usage
+async function completeRoomAndDeclareWinner(room_id) {
+    try {
+        const room = await Room.findById(room_id);
+        if (!room || room.status === 'completed') {
+            return { error: 'Room not found or already completed' };
+        }
+
+        // if (!room.players || room.players.length < 2) {
+        //     return { error: 'Not enough players to complete the game' };
+        // }
+
+        const winnerIndex = Math.floor(Math.random() * room.players.length);
+        const winnerId = room.players[winnerIndex];
+
+        const winner = await User.findById(winnerId);
+        const winningAmount = room.total_pot || 0;
+        winner.wallet_balance += winningAmount;
+        await winner.save();
+
+        await logWalletTransaction({
+            userId: winner._id,
+            amount: winningAmount,
+            type: 'credit',
+            reason: 'win',
+            description: `Won ₹${winningAmount} in Room #${room._id}`
+        });
+
+        room.status = 'completed';
+        room.winner = winnerId;
+        await room.save();
+
+        return {
+            message: 'Game completed',
+            room_id,
+            winner: winnerId,
+            amount_won: winningAmount
+        };
+    } catch (error) {
+        console.error('Error completing game:', error);
+        return { error: 'Failed to complete game' };
+    }
+}
+
+// Exported route/controller function
+exports.completeGame = async (req, res) => {
+    try {
+        const { room_id } = req.body || {};
+        const errors = {};
+
+        if (!room_id) {
+            Object.assign(errors, formatError('room_id', 'The room_id field is required.'));
+        }
+
+        if (Object.keys(errors).length > 0) {
+            return res.status(422).json({ message: 'Validation Error', errors });
+        }
+
+        const result = await completeRoomAndDeclareWinner(room_id); // ✅ Direct call
+        if (result.error) return res.status(400).json({ message: result.error });
+
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error completing game:', error);
+        res.status(500).json({ error: 'Server error' });
     }
 };

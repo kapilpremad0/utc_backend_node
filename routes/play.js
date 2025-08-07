@@ -18,5 +18,7 @@ const verifyToken = require('../middlewares/auth'); // 👈 Import middleware
 router.post('/join-game',verifyToken ,playController.PlayBootGame);         // Get all
 router.get('/boots',verifyToken ,playController.bootGameList);         // Get all
 router.post('/exit-game', verifyToken, playController.exitGame);
+router.post('/place-bet', verifyToken, playController.placeBet);
+router.post('/complete-game', verifyToken, playController.completeGame);
 
 module.exports = router;
