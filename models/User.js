@@ -19,6 +19,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    avatar: {
+        type: String, // This will store the image URL or path
+        default: ''   // Optional: provide a default avatar
+    },
     is_guest: {
         type: Boolean,
         default: false

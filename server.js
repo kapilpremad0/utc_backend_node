@@ -3,6 +3,8 @@ const connectDB = require('./config/db');
 const dotenv = require('dotenv');
 const cors = require('cors');
 
+const verifyToken = require('./middlewares/auth'); // 👈 Import middleware
+
 dotenv.config();
 connectDB();
 
@@ -14,6 +16,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 
 app.use('/api/play', require('./routes/play'));
+app.use('/api/profile',verifyToken, require('./routes/profile'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
