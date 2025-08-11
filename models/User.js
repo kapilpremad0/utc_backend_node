@@ -33,4 +33,10 @@ const UserSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+
+// userSchema.virtual('avatarUrl').get(function () {
+//   const avatarFile = this.avatar ? `avatar${this.avatar}.png` : 'default.png';
+//   return `/assets/${avatarFile}`;
+// });
+
 module.exports = mongoose.model('User', UserSchema);

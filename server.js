@@ -11,6 +11,9 @@ connectDB();
 const app = express();
 app.use(cors());
 app.use(express.json()); // for parsing application/json
+const path = require('path');
+
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));

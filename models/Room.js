@@ -11,7 +11,9 @@ const roomSchema = new mongoose.Schema({
     total_pot: { type: Number, default: 0 },
     players: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     max_players: { type: Number, default: 5 },
-    winner: { type: String, default: '' },
+    winner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' ,default:null},
+
+    // winner: { type: String, default: '' },
     status: { type: String, enum: ['waiting', 'running', 'completed'], default: 'waiting' },
 }, { timestamps: true });
 
