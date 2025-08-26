@@ -36,13 +36,21 @@ router.get('/', async (req, res) => {
 
 router.put('/', async (req, res) => {
     const userId = req.user.id;
-    const { user_name, avatar } = req.body || {};
+    const { user_name, avatar ,player_id  } = req.body || {};
 
     try {
         const user = await User.findById(userId);
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
+        }
+        
+        if (player_id) {
+            const existingUser = await User.findOne({ player_id, _id: { $ne: userId } });
+            if (existingUser) {
+                return res.status(400).json({ message: 'Player ID already exists' });
+            }
+            user.player_id = player_id;
         }
 
         // Update fields
