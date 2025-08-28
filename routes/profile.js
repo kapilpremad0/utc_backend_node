@@ -63,7 +63,8 @@ router.put('/', async (req, res) => {
             message: 'Profile updated successfully',
             user: {
                 user_name: user.user_name,
-                avatar: user.avatar
+                avatar: user.avatar,
+                player_id: user.player_id
             }
         });
     } catch (err) {

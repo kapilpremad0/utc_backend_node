@@ -5,6 +5,8 @@ const Boot = require('../models/Boot');
 const Room = require('../models/Room');
 const Bet = require('../models/Bet');
 const { logWalletTransaction } = require('../helpers/wallet');
+const { getIO } = require("../config/socket");
+
 
 const formatError = (field, message) => ({ [field]: message });
 const verifyToken = require('../middlewares/auth'); // 👈 Import middleware
@@ -75,6 +77,10 @@ exports.PlayBootGame = async (req, res) => {
             }
         }
 
+        const io = getIO();
+        io.to(room._id.toString()).emit("playerJoined", { userId, roomId: room._id });
+
+
         res.status(200).json({
             message: 'Joined room successfully',
             room
@@ -120,6 +126,9 @@ exports.exitGame = async (req, res) => {
         if (room.players.length === 0) {
             await Room.deleteOne({ _id: room_id });
         }
+
+        const io = getIO();
+        io.to(room._id.toString()).emit("playerLeft", { userId, roomId: room._id });
 
         return res.status(200).json({
             message: 'Exited the game successfully',
