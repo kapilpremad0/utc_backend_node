@@ -15,7 +15,7 @@ function initSocket(server) {
 
         // Player joins a room
 
-        
+
         socket.on("joinRoom", ({ roomId, userId }) => {
             socket.join(roomId); // Join socket room
             console.log(`User ${userId} joined room ${roomId}`);
@@ -33,10 +33,19 @@ function initSocket(server) {
             io.to(roomId).emit("playerLeft", { userId, roomId });
         });
 
+        
+
+        
         // Handle disconnect
         socket.on("disconnect", () => {
             console.log("Client disconnected:", socket.id);
         });
+
+
+        socket.onAny((event, data) => {
+            console.log("📡 Event received:", event, data);
+        });
+        
     });
 
     return io;

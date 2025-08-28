@@ -199,6 +199,17 @@ exports.placeBet = async (req, res) => {
         room.total_pot = (room.total_pot || 0) + amount;
         await room.save();
 
+
+        const io = getIO();
+        io.to(room_id).emit("betPlaced", {
+            room_id,
+            user_id: userId,
+            amount,
+            type,
+            new_pot: room.total_pot,
+            wallet_balance: user.wallet_balance
+        });
+
         res.status(200).json({
             message: 'Bet placed successfully',
             bet
@@ -267,6 +278,13 @@ async function completeRoomAndDeclareWinner(room_id) {
         room.status = 'completed';
         room.winner = winnerId;
         await room.save();
+
+        const io = getIO();
+        io.to(room_id).emit("gameCompleted", {
+            roomId: room_id,
+            result: result, // winners, scores, etc.
+            winner: winnerId
+        });
 
         return {
             message: 'Game completed',
