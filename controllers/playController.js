@@ -47,7 +47,7 @@ exports.PlayBootGame = async (req, res) => {
         // Find boot data
         const boot = await Boot.findById(boot_id);
         if (!boot) return res.status(404).json({ message: 'Boot not found' });
-
+        const player = await User.findById(userId);
         // Find existing waiting room with this boot
         let room = await Room.findOne({
             boot_id: boot_id,
@@ -65,7 +65,7 @@ exports.PlayBootGame = async (req, res) => {
                 max_pot_amount: boot.max_pot_amount,
                 min_buy_in: boot.min_buy_in,
                 max_buy_in: boot.max_buy_in,
-                players: [userId]
+                players: [userId],
             });
 
             await room.save();
@@ -83,7 +83,8 @@ exports.PlayBootGame = async (req, res) => {
 
         res.status(200).json({
             message: 'Joined room successfully',
-            room
+            room,
+            player
         });
 
     } catch (error) {
