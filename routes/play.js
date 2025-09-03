@@ -20,5 +20,6 @@ router.get('/boots',verifyToken ,playController.bootGameList);         // Get al
 router.post('/exit-game', verifyToken, playController.exitGame);
 router.post('/place-bet', verifyToken, playController.placeBet);
 router.post('/complete-game', verifyToken, playController.completeGame);
+router.get('/room-detail/:id', verifyToken, playController.roomDetail);
 
 module.exports = router;

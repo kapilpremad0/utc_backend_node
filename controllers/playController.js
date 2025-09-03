@@ -23,6 +23,21 @@ exports.bootGameList = async (req, res) => {
 };
 
 
+exports.roomDetail = async (req, res) => {
+    try {
+        const roomId = req.params.id; // get id from URL
+        const room = await Room.findById(roomId).populate('players');
+        if (!room) {
+            return res.status(404).json({ error: 'Room not found' });
+        }
+        res.json(room);
+    } catch (error) {
+        console.error('Error fetching boots:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+}
+
+
 
 
 exports.PlayBootGame = async (req, res) => {
