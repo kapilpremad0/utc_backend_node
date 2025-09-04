@@ -34,4 +34,4 @@ jobs:
           script: |
             cd /var/www/teenpatti
             npm install --production
-            pm2 restart teenpatti || pm2 start npm --name "myproject" -- start
+            pm2 restart teenpatti || pm2 start npm --name "teenpatti" -- start
