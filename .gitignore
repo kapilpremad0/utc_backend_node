@@ -5,6 +5,9 @@
 package-lock.json
 yarn.lock
 
+.git
+
+
 .env
 # testing
 /coverage
