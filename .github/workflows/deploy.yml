@@ -3,16 +3,18 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - master   # run only on master push
+      - master   # Deploy only when pushing to master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout code
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      # 2. Upload files via SFTP
       - name: Upload files via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
@@ -23,7 +25,9 @@ jobs:
           local_path: "./"
           remote_path: "/var/www/teenpatti"
           delete_remote_files: false
+          exclude: ".git,node_modules,.github,.env,*.log"
 
+      # 3. Install deps & restart with PM2
       - name: Install deps & restart with PM2 (SSH)
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -33,5 +37,13 @@ jobs:
           port: 22
           script: |
             cd /var/www/teenpatti
-            npm install --production
-            pm2 restart teenpatti || pm2 start npm --name "teenpatti" -- start
+            npm install --production --legacy-peer-deps
+            pm2 describe teenpatti > /dev/null
+            if [ $? -eq 0 ]; then
+              echo "Restarting existing PM2 process..."
+              pm2 restart teenpatti
+            else
+              echo "Starting new PM2 process..."
+              pm2 start npm --name "teenpatti" -- start
+            fi
+            pm2 save
