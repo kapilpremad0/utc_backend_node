@@ -34,4 +34,6 @@ jobs:
           script: |
             cd /var/www/teenpatti
             npm install --production
-            pm2 restart teenpatti || pm2 start server.js --name "teenpatti"
+            pm2 delete teenpatti || true
+            pm2 start server.js --name "teenpatti"
+            pm2 save

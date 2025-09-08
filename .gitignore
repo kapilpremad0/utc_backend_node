@@ -5,7 +5,7 @@
 package-lock.json
 yarn.lock
 
-.git
+/.git
 
 
 .env
