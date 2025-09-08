@@ -14,13 +14,14 @@ function initSocket(server) {
     io.on("connection", (socket) => {
         console.log("New client connected:", socket.id);
 
+        let userSockets = {};
         // Player joins a room
 
 
         socket.on("joinRoom", ({ roomId, userId }) => {
             socket.join(roomId); // Join socket room
             console.log(`User ${userId} joined room ${roomId}`);
-
+            userSockets[userId] = socket.id;
             // Notify other players
             io.to(roomId).emit("playerJoined", { userId, roomId });
         });
@@ -86,6 +87,137 @@ function initSocket(server) {
             io.to(roomId).emit("room_state", getRoomState(roomId));
         });
 
+
+
+        // ---boot collet
+        socket.on("boot_collect", ({ roomId, bootAmount, totalPot, tableBet, collectedFrom }) => {
+            console.log(`Boot collected in room ${roomId}, bootAmount: ${bootAmount}, totalPot: ${totalPot}`);
+
+            io.to(roomId).emit("boot_collect", {
+                room_id: roomId,
+                boot_amount: bootAmount,
+                collected_from: collectedFrom,  // [{ user_id, seat, amount, wallet_after }]
+                total_pot: totalPot,
+                table_bet: tableBet
+            });
+        });
+
+        // --- Deal Cards ---
+        socket.on("deal_cards", ({ roomId, players }) => {
+            console.log(`Dealing cards in room ${roomId}`);
+
+            // players = [ { user_id, seat, cards: [..] }, ... ]
+            io.to(roomId).emit("deal_cards", {
+                room_id: roomId,
+                players: players
+            });
+        });
+
+        socket.on("turn_changed", ({ roomId, userId, seat }) => {
+            console.log(`Turn changed in room ${roomId}, now it's user ${userId} (seat ${seat})`);
+
+            io.to(roomId).emit("turn_changed", {
+                room_id: roomId,
+                user_id: userId,
+                seat: seat
+            });
+        });
+
+
+        // --- Bet Placed ---
+        socket.on("bet_placed", ({ roomId, userId, seat, amount, type, pot, tableBet }) => {
+            console.log(`User ${userId} placed a ${type} bet of ${amount} in room ${roomId}`);
+
+            io.to(roomId).emit("bet_placed", {
+                room_id: roomId,
+                user_id: userId,
+                seat: seat,
+                amount: amount,
+                type: type,        // e.g., "blind" or "chaal"
+                pot: pot,
+                table_bet: tableBet
+            });
+        });
+
+        // --- Wallet Update ---
+        socket.on("wallet_update", ({ roomId, userId, wallet }) => {
+            console.log(`Wallet updated for user ${userId} in room ${roomId}: ${wallet}`);
+
+            io.to(roomId).emit("wallet_update", {
+                room_id: roomId,
+                user_id: userId,
+                wallet: wallet
+            });
+        });
+
+        // --- SideShow Request ---
+        socket.on("sideshow_request", ({ roomId, fromUserId, fromSeat, toUserId, toSeat }) => {
+            console.log(`SideShow request from ${fromUserId} (seat ${fromSeat}) to ${toUserId} (seat ${toSeat}) in room ${roomId}`);
+
+            // Forward request to the target player only
+            // Assuming you have a mapping of userId -> socket.id, e.g., `userSockets[toUserId]`
+            const targetSocketId = userSockets[toUserId];
+            if (targetSocketId) {
+                io.to(targetSocketId).emit("sideshow_request", {
+                    room_id: roomId,
+                    from_user_id: fromUserId,
+                    from_seat: fromSeat,
+                    to_user_id: toUserId,
+                    to_seat: toSeat
+                });
+            }
+        });
+
+        // --- SideShow Response ---
+        socket.on("sideshow_response", ({ roomId, requesterUserId, targetUserId, accepted }) => {
+            console.log(`SideShow response from ${targetUserId} to ${requesterUserId} in room ${roomId}: ${accepted}`);
+
+            io.to(roomId).emit("sideshow_response", {
+                room_id: roomId,
+                requester_user_id: requesterUserId,
+                target_user_id: targetUserId,
+                accepted: accepted
+            });
+        });
+
+        // --- Show Result ---
+        socket.on("show_result", ({ roomId, winnerUserId, winnerSeat, amountWon, hands }) => {
+            console.log(`Showdown in room ${roomId}, winner: ${winnerUserId} (seat ${winnerSeat}), amount won: ${amountWon}`);
+
+            io.to(roomId).emit("show_result", {
+                room_id: roomId,
+                winner_user_id: winnerUserId,
+                winner_seat: winnerSeat,
+                amount_won: amountWon,
+                hands: hands // [{ user_id, seat, cards: [], hand }]
+            });
+        });
+
+
+        // --- Game Completed ---
+        socket.on("game_completed", ({ roomId, winnerUserId, winnerSeat, amountWon }) => {
+            console.log(`Game completed in room ${roomId}, winner: ${winnerUserId} (seat ${winnerSeat}), amount won: ${amountWon}`);
+
+            io.to(roomId).emit("game_completed", {
+                room_id: roomId,
+                winner_user_id: winnerUserId,
+                winner_seat: winnerSeat,
+                amount_won: amountWon
+            });
+        });
+
+        // --- Round Restart ---
+        socket.on("round_restart", ({ roomId, nextInSeconds }) => {
+            console.log(`Next round in room ${roomId} will start in ${nextInSeconds} seconds`);
+
+            io.to(roomId).emit("round_restart", {
+                room_id: roomId,
+                next_in_seconds: nextInSeconds
+            });
+        });
+
+
+
         // --- Wallet Update ---
         function updateWallet(roomId, userId, balance) {
             io.to(roomId).emit("wallet_update", { userId, balance });
@@ -124,7 +256,7 @@ async function getRoomState(roomId) {
     const room = await Room.findOne({ roomId });
     if (!room) return null;
 
-    
+
 
     return room;
 }
