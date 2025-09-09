@@ -128,7 +128,7 @@ router.post('/login', async (req, res) => {
         }
 
         const payload = { user: { id: user.id } };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3y' });
 
         return res.json({
             message: 'Login successful',
@@ -172,7 +172,7 @@ router.post('/guest-login', async (req, res) => {
         });
 
         const payload = { user: { id: user.id } };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3y' });
 
         return res.json({
             message: 'Guest login successful',
