@@ -216,6 +216,27 @@ function initSocket(server) {
             });
         });
 
+        socket.on("dealer_decide", async ({ roomId, userId, seat }) => {
+            console.log(`Dealer decided in room ${roomId}, dealer: ${userId} (seat ${seat})`);
+
+            // 1. Update DB (optional if you want persistence)
+            await Room.updateOne(
+                { roomId },
+                { $set: { dealer: { userId, seat } } }
+            );
+
+            // 2. Emit dealer_decide event
+            io.to(roomId).emit("dealer_decide", {
+                room_id: roomId,
+                user_id: userId,
+                seat: seat
+            });
+
+            // 3. Emit updated room state
+            const state = await getRoomState(roomId);
+            io.to(roomId).emit("room_state", state);
+        });
+
 
 
         // --- Wallet Update ---
