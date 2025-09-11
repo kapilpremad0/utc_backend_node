@@ -3,6 +3,10 @@ const Room = require('../models/Room');
 
 let io;
 
+
+let userSockets = {};
+// Player joins a room
+
 function initSocket(server) {
     io = new Server(server, {
         cors: {
@@ -13,10 +17,6 @@ function initSocket(server) {
 
     io.on("connection", (socket) => {
         console.log("New client connected:", socket.id);
-
-        let userSockets = {};
-        // Player joins a room
-
 
         socket.on("joinRoom", ({ roomId, userId }) => {
             socket.join(roomId); // Join socket room
@@ -33,6 +33,7 @@ function initSocket(server) {
 
             // Notify others
             io.to(roomId).emit("playerLeft", { userId, roomId });
+            delete userSockets[userId];
         });
 
         // --- Start Round ---
@@ -274,11 +275,8 @@ function getIO() {
 }
 
 async function getRoomState(roomId) {
-    const room = await Room.findOne({ roomId });
+    const room = await Room.findById(roomId).populate('players');
     if (!room) return null;
-
-
-
     return room;
 }
 
