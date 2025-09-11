@@ -94,7 +94,7 @@ function initSocket(server) {
         socket.on("boot_collect", ({ roomId, bootAmount, totalPot, tableBet, collectedFrom }) => {
             console.log(`Boot collected in room ${roomId}, bootAmount: ${bootAmount}, totalPot: ${totalPot}`);
 
-            io.to(roomId).emit("boot_collect", {
+            io.emit("boot_collect", {
                 room_id: roomId,
                 boot_amount: bootAmount,
                 collected_from: collectedFrom,  // [{ user_id, seat, amount, wallet_after }]
@@ -117,7 +117,7 @@ function initSocket(server) {
         socket.on("turn_changed", ({ roomId, userId, seat }) => {
             console.log(`Turn changed in room ${roomId}, now it's user ${userId} (seat ${seat})`);
 
-            io.to(roomId).emit("turn_changed", {
+            io.emit("turn_changed", {
                 room_id: roomId,
                 user_id: userId,
                 seat: seat
@@ -275,6 +275,7 @@ function getIO() {
 }
 
 async function getRoomState(roomId) {
+    roomId = "68946e76e6a34b614ea38bc6";
     const room = await Room.findById(roomId).populate('players');
     if (!room) return null;
     return room;
