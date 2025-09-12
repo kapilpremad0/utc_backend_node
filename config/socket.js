@@ -18,13 +18,13 @@ function initSocket(server) {
     io.on("connection", (socket) => {
         console.log("New client connected:", socket.id);
 
-        socket.on("joinRoom", ({ roomId, userId }) => {
+        socket.on("joinRoom", async ({ roomId, userId }) => {
             socket.join(roomId); // Join socket room
             console.log(`User ${userId} joined room ${roomId}`);
             userSockets[userId] = socket.id;
             // Notify other players
             io.to(roomId).emit("playerJoined", { userId, roomId });
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state", await getRoomState(roomId));
         });
 
         // Player leaves a room
@@ -282,10 +282,23 @@ function getIO() {
 }
 
 async function getRoomState(roomId) {
-    roomId = "68946e76e6a34b614ea38bc6";
-    const room = await Room.findById(roomId).populate('players');
-    if (!room) return null;
-    return room;
+    try {
+        // if roomId is not ObjectId, try findOne by custom roomId field
+        let room;
+
+        if (/^[0-9a-fA-F]{24}$/.test(roomId)) {
+            // valid ObjectId → query by _id
+            room = await Room.findById(roomId).populate("players");
+        } else {
+            // fallback → query by custom field "roomId"
+            room = await Room.findOne({ roomId }).populate("players");
+        }
+
+        return room || null;
+    } catch (err) {
+        console.error("❌ Error fetching room state:", err);
+        return null;
+    }
 }
 
 module.exports = { initSocket, getIO };
