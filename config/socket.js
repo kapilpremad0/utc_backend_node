@@ -24,6 +24,7 @@ function initSocket(server) {
             userSockets[userId] = socket.id;
             // Notify other players
             io.to(roomId).emit("playerJoined", { userId, roomId });
+            io.to(roomId).emit("room_state", getRoomState(roomId));
         });
 
         // Player leaves a room
@@ -33,6 +34,7 @@ function initSocket(server) {
 
             // Notify others
             io.to(roomId).emit("playerLeft", { userId, roomId });
+            io.to(roomId).emit("room_state", getRoomState(roomId));
             delete userSockets[userId];
         });
 
@@ -42,6 +44,7 @@ function initSocket(server) {
 
             // shuffle/deal logic here
             io.to(roomId).emit("round_start", { roomId });
+            io.to(roomId).emit("room_state", getRoomState(roomId));
         });
 
         // --- Place Bet (Chaal / Blind) ---
@@ -101,6 +104,7 @@ function initSocket(server) {
                 total_pot: totalPot,
                 table_bet: tableBet
             });
+            io.to(roomId).emit("room_state", getRoomState(roomId));
         });
 
         // --- Deal Cards ---
@@ -112,6 +116,7 @@ function initSocket(server) {
                 room_id: roomId,
                 players: players
             });
+            io.to(roomId).emit("room_state", getRoomState(roomId));
         });
 
         socket.on("turn_changed", ({ roomId, userId, seat }) => {
@@ -122,6 +127,7 @@ function initSocket(server) {
                 user_id: userId,
                 seat: seat
             });
+            io.to(roomId).emit("room_state", getRoomState(roomId));
         });
 
 
@@ -138,6 +144,7 @@ function initSocket(server) {
                 pot: pot,
                 table_bet: tableBet
             });
+            io.to(roomId).emit("room_state", getRoomState(roomId));
         });
 
         // --- Wallet Update ---
