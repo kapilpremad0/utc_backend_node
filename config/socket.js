@@ -28,32 +28,32 @@ function initSocket(server) {
         });
 
         // Player leaves a room
-        socket.on("leaveRoom", ({ roomId, userId }) => {
+        socket.on("leaveRoom", async ({ roomId, userId }) => {
             socket.leave(roomId);
             console.log(`User ${userId} left room ${roomId}`);
 
             // Notify others
             io.to(roomId).emit("playerLeft", { userId, roomId });
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state",await getRoomState(roomId));
             delete userSockets[userId];
         });
 
         // --- Start Round ---
-        socket.on("round_start", ({ roomId }) => {
+        socket.on("round_start", async({ roomId }) => {
             console.log(`Round started in ${roomId}`);
 
             // shuffle/deal logic here
             io.to(roomId).emit("round_start", { roomId });
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state", await getRoomState(roomId));
         });
 
         // --- Place Bet (Chaal / Blind) ---
-        socket.on("bet_request", ({ roomId, userId, amount, type }) => {
+        socket.on("bet_request", async({ roomId, userId, amount, type }) => {
             console.log(`Bet: ${userId} -> ${amount} (${type})`);
 
             // validate wallet, turn, etc
             io.to(roomId).emit("bet_placed", { userId, amount, type });
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state", await getRoomState(roomId));
         });
 
         // --- See Cards ---
@@ -64,15 +64,15 @@ function initSocket(server) {
         });
 
         // --- Pack (Fold) ---
-        socket.on("pack_request", ({ roomId, userId }) => {
+        socket.on("pack_request", async({ roomId, userId }) => {
             console.log(`User ${userId} packed`);
 
             io.to(roomId).emit("player_packed", { userId });
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state",await getRoomState(roomId));
         });
 
         // --- Side Show ---
-        socket.on("sideshow_request", ({ roomId, fromUserId, targetId }) => {
+        socket.on("sideshow_request", async ({ roomId, fromUserId, targetId }) => {
             console.log(`SideShow: ${fromUserId} -> ${targetId}`);
 
             // Ask target to accept/reject
@@ -80,21 +80,21 @@ function initSocket(server) {
                 fromUserId, targetId, accepted: true // or false
             });
 
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state", await getRoomState(roomId));
         });
 
         // --- Show (Final showdown) ---
-        socket.on("show_request", ({ roomId, userId }) => {
+        socket.on("show_request", async ({ roomId, userId }) => {
             console.log(`Show requested in ${roomId} by ${userId}`);
 
             io.to(roomId).emit("show_result", { winnerId: userId }); // real logic later
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state", await getRoomState(roomId));
         });
 
 
 
         // ---boot collet
-        socket.on("boot_collect", ({ roomId, bootAmount, totalPot, tableBet, collectedFrom }) => {
+        socket.on("boot_collect",async ({ roomId, bootAmount, totalPot, tableBet, collectedFrom }) => {
             console.log(`Boot collected in room ${roomId}, bootAmount: ${bootAmount}, totalPot: ${totalPot}`);
 
             io.emit("boot_collect", {
@@ -104,11 +104,11 @@ function initSocket(server) {
                 total_pot: totalPot,
                 table_bet: tableBet
             });
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state",await getRoomState(roomId));
         });
 
         // --- Deal Cards ---
-        socket.on("deal_cards", ({ roomId, players }) => {
+        socket.on("deal_cards", async({ roomId, players }) => {
             console.log(`Dealing cards in room ${roomId}`);
 
             // players = [ { user_id, seat, cards: [..] }, ... ]
@@ -116,10 +116,10 @@ function initSocket(server) {
                 room_id: roomId,
                 players: players
             });
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state", await getRoomState(roomId));
         });
 
-        socket.on("turn_changed", ({ roomId, userId, seat }) => {
+        socket.on("turn_changed", async({ roomId, userId, seat }) => {
             console.log(`Turn changed in room ${roomId}, now it's user ${userId} (seat ${seat})`);
 
             io.emit("turn_changed", {
@@ -127,12 +127,12 @@ function initSocket(server) {
                 user_id: userId,
                 seat: seat
             });
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state",await getRoomState(roomId));
         });
 
 
         // --- Bet Placed ---
-        socket.on("bet_placed", ({ roomId, userId, seat, amount, type, pot, tableBet }) => {
+        socket.on("bet_placed",async ({ roomId, userId, seat, amount, type, pot, tableBet }) => {
             console.log(`User ${userId} placed a ${type} bet of ${amount} in room ${roomId}`);
 
             io.to(roomId).emit("bet_placed", {
@@ -144,7 +144,7 @@ function initSocket(server) {
                 pot: pot,
                 table_bet: tableBet
             });
-            io.to(roomId).emit("room_state", getRoomState(roomId));
+            io.to(roomId).emit("room_state",await getRoomState(roomId));
         });
 
         // --- Wallet Update ---
